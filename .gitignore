@@ -1,0 +1,29 @@
+# Node modules
+node_modules/
+**/node_modules/
+
+# Builds
+dist/
+build/
+.next/
+.out/
+.vercel/
+
+# Env files (ASLA git'e gitmesin)
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# System & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
