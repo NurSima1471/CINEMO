@@ -1,262 +1,344 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { moviesAPI, recommendationsAPI } from '../services/api';
-import { useAuth } from '../context/AuthContext';
-import HeroSection from '../components/HeroSection';
-import MovieRow from '../components/MovieRow';
-import { Loader2 } from 'lucide-react';
-import back1Image from '../assets/images/back1.png';
-import back2Image from '../assets/images/back2.png';
-import back3Image from '../assets/images/back3.png';
-import back4Image from '../assets/images/back4.png';
+import { useState, useEffect, useMemo } from "react";
+import { Link } from "react-router-dom";
+import { moviesAPI, recommendationsAPI } from "../services/api";
+import { useAuth } from "../context/AuthContext";
+import HeroSection from "../components/HeroSection";
+import MovieRow from "../components/MovieRow";
+import Loading from "../components/Loading";
+
+import back1Image from "../assets/images/back1.png";
+import back2Image from "../assets/images/back2.png";
+import back3Image from "../assets/images/back3.png";
 
 const Home = () => {
   const { isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(true);
-  
-  // Veri state'i
+
   const [data, setData] = useState({
     hero: null,
     trending: [],
     popular: [],
     topRated: [],
     series: [],
-    personalized: []
+    personalized: [],
   });
 
- 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
 
-      // 1. ADIM: Trend verisi (HERKES İÇİN)
-      // Trend isteğini listeye ekliyoruz.
       const requests = [moviesAPI.getTrending()];
 
-      // 2. ADIM: Sadece Üyeler için diğer veriler
       if (isAuthenticated) {
-        requests.push(moviesAPI.getPopular());     // Index 1
-        requests.push(moviesAPI.getTopRated());    // Index 2
-        requests.push(moviesAPI.getSeries());      // Index 3
-        requests.push(recommendationsAPI.getHybrid()); // Index 4
+        requests.push(moviesAPI.getPopular());
+        requests.push(moviesAPI.getTopRated());
+        requests.push(moviesAPI.getSeries());
+        requests.push(recommendationsAPI.getHybrid());
       }
 
-      // Tüm istekleri paralel olarak at
       const responses = await Promise.all(requests);
-
-      // 3. ADIM: Verileri State'e İşleme
-      // responses[0] her zaman Trend verisidir.
       const trendingData = responses[0].data.data;
 
       setData({
-        // Hero: Üye ise veriden gelen ilk film, değilse null (Static Hero kullanacağız)
         hero: isAuthenticated ? trendingData[0] : null,
-        
-        // Trend: Herkes görür
         trending: trendingData.slice(1, 21),
-        
-        // Diğerleri: Sadece üye ise doldur, değilse boş dizi
         popular: isAuthenticated ? responses[1]?.data.data.slice(0, 20) : [],
         topRated: isAuthenticated ? responses[2]?.data.data.slice(0, 20) : [],
         series: isAuthenticated ? responses[3]?.data.data.slice(0, 20) : [],
-        personalized: isAuthenticated ? responses[4]?.data.data || [] : []
+        personalized: isAuthenticated ? responses[4]?.data.data || [] : [],
       });
-
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) {
+  const reasons = useMemo(
+    () => [
+      {
+        title: "Advanced AI Analysis",
+        desc: "Forget generic suggestions. Our AI analyzes your viewing history and ratings to provide spot-on recommendations.",
+        icon: (
+          <svg
+            className="w-12 h-12 text-purple-500"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="1.5"
+              d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
+            />
+          </svg>
+        ),
+      },
+      {
+        title: "Discover by Mood",
+        desc: "It's not just about genre; feelings matter. Find movies and shows that perfectly match your current vibe.",
+        icon: (
+          <svg
+            className="w-12 h-12 text-purple-500"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="1.5"
+              d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        ),
+      },
+      {
+        title: "Smart Watchlists",
+        desc: "Keep all your favorites from different platforms in one place. Create your ultimate watchlist.",
+        icon: (
+          <svg
+            className="w-12 h-12 text-purple-500"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="1.5"
+              d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+            />
+          </svg>
+        ),
+      },
+      {
+        title: "End Decision Fatigue",
+        desc: "Stop scrolling and start watching. Save the time you spend searching and find the perfect match immediately.",
+        icon: (
+          <svg
+            className="w-12 h-12 text-purple-500"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="1.5"
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        ),
+      },
+    ],
+    []
+  );
+
+  if (loading) return <Loading />;
+
+  // --- MİSAFİR KULLANICI ---
+  if (!isAuthenticated) {
     return (
-      <div className="flex items-center justify-center h-screen bg-black">
-        <Loader2 className="w-12 h-12 animate-spin text-red-600" />
+      <div className="min-h-screen bg-black text-white overflow-x-hidden">
+        {/* HERO */}
+        <section className="relative w-full h-[88vh] md:h-[92vh] overflow-hidden">
+          {/* Background: 3 images stacked */}
+          <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 flex flex-col">
+              <div
+                className="flex-1 w-full bg-cover bg-center"
+                style={{ backgroundImage: `url(${back1Image})` }}
+              />
+              <div
+                className="flex-1 w-full bg-cover bg-center"
+                style={{ backgroundImage: `url(${back2Image})` }}
+              />
+              <div
+                className="flex-1 w-full bg-cover bg-center"
+                style={{ backgroundImage: `url(${back3Image})` }}
+              />
+            </div>
+
+            {/* Stronger mask for readability + premium look */}
+            <div className="absolute inset-0 bg-black/50" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/45 to-black" />
+            <div className="absolute inset-0 [box-shadow:inset_0_-120px_120px_rgba(0,0,0,0.9)]" />
+
+            {/* subtle glow */}
+            <div className="absolute -top-24 left-1/2 h-72 w-[40rem] -translate-x-1/2 rounded-full bg-purple-500/10 blur-3xl" />
+          </div>
+
+          {/* Content */}
+          <div className="relative z-10 h-full flex items-center">
+            <div className="w-full max-w-6xl mx-auto px-4 md:px-10 pt-24 md:pt-28">
+              <div className="max-w-3xl">
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-white/80 backdrop-blur">
+                  <span className="h-2 w-2 rounded-full bg-purple-400 shadow-[0_0_18px_rgba(168,85,247,0.9)]" />
+                  AI-powered recommendations
+                </div>
+
+                <h1 className="mt-5 text-4xl md:text-6xl font-black leading-tight drop-shadow-xl">
+                  Can't decide what to watch?
+                </h1>
+
+                <p className="mt-4 text-base md:text-2xl text-white/85 leading-relaxed drop-shadow">
+                  Stop scrolling for hours. Let AI learn your taste and find the
+                  perfect movie or TV show for you in seconds.
+                </p>
+
+                <div className="mt-8 flex flex-col sm:flex-row gap-3 sm:items-center">
+                  <Link
+                    to="/login"
+                    className="group inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 px-7 py-3 text-lg font-bold shadow-lg shadow-purple-500/25 transition hover:scale-[1.02] hover:shadow-purple-500/35 focus:outline-none focus:ring-2 focus:ring-purple-500/60"
+                  >
+                    Start Exploring
+                    <span className="text-2xl transition-transform group-hover:translate-x-0.5">
+                      ›
+                    </span>
+                  </Link>
+
+                  <div className="text-sm text-white/60">
+                    No payment • Personalized picks • Fast onboarding
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Wave transition */}
+          <div className="absolute bottom-0 left-0 w-full z-20">
+            <svg
+              viewBox="0 0 1440 120"
+              className="block w-full"
+              preserveAspectRatio="none"
+            >
+              <defs>
+                <linearGradient id="g1" x1="0" x2="1">
+                  <stop offset="0" stopColor="#7c3aed" stopOpacity="0.95" />
+                  <stop offset="1" stopColor="#db2777" stopOpacity="0.95" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M0,64 C240,124 480,124 720,72 C960,20 1200,20 1440,72 L1440,120 L0,120 Z"
+                fill="url(#g1)"
+                opacity="0.45"
+              />
+              <path
+                d="M0,74 C240,124 480,124 720,78 C960,32 1200,32 1440,78 L1440,120 L0,120 Z"
+                fill="#000000"
+              />
+            </svg>
+          </div>
+        </section>
+
+        {/* CONTENT */}
+        <section className="relative z-30 bg-black pb-20">
+          <div className="max-w-7xl mx-auto px-4 md:px-16">
+            {/* Trending */}
+            <div className="-mt-12 md:-mt-16 mb-14">
+              <MovieRow
+                title="Trending Now"
+                movies={data.trending?.slice(0, 10)}
+                size="normal"
+                isRanked={true}
+                variant="ai-rank"
+                gap="gap-4"
+              />
+            </div>
+
+            {/* Reasons */}
+            <div>
+              <div className="flex items-end justify-between gap-4 mb-6">
+                <h2 className="text-2xl md:text-3xl font-bold">
+                  More Reasons to Join
+                </h2>
+                <div className="hidden md:block text-sm text-white/55">
+                  Built for fast discovery
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {reasons.map((item, index) => (
+                  <div
+                    key={index}
+                    className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.08] to-white/[0.03] p-6 min-h-[240px] flex flex-col justify-between backdrop-blur"
+                  >
+                    <div>
+                      <h3 className="text-xl font-bold">{item.title}</h3>
+                      <p className="mt-2 text-sm leading-relaxed text-white/65">
+                        {item.desc}
+                      </p>
+                    </div>
+
+                    <div className="mt-6 flex items-end justify-between">
+                     
+                      <div className="opacity-90 group-hover:opacity-100 transition">
+                        {item.icon}
+                      </div>
+                    </div>
+
+                    {/* hover glow */}
+                    <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="absolute -top-16 -right-16 h-56 w-56 rounded-full bg-purple-500/15 blur-3xl" />
+                      <div className="absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-pink-500/10 blur-3xl" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Bottom CTA */}
+            <div className="mt-16 rounded-2xl border border-white/10 bg-gradient-to-r from-purple-600/15 to-pink-600/10 p-6 md:p-8">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <h3 className="text-xl md:text-2xl font-bold">
+                    Ready to get better recommendations?
+                  </h3>
+                  <p className="mt-1 text-white/65">
+                    Create your profile and let the AI learn your taste.
+                  </p>
+                </div>
+                <Link
+                  to="/login"
+                  className="inline-flex items-center justify-center rounded-xl bg-white text-black font-bold px-6 py-3 hover:opacity-90 transition"
+                >
+                  Join Now
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     );
   }
 
-  // --- MİSAFİR KULLANICI GÖRÜNÜMÜ ---
-if (!isAuthenticated) {
-  
-  // "Bize Katılmanız İçin Nedenler" verisi
-  const reasons = [
-    {
-      title: "Advanced AI Analysis",
-    desc: "Forget generic suggestions. Our AI analyzes your viewing history and ratings to provide spot-on recommendations.",
-      icon: (
-  <svg className="w-12 h-12 text-purple-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
-  </svg>
-)
-    },
-    {
-      title: "Discover by Mood",
-    desc: "It's not just about genre; feelings matter. Find movies and shows that perfectly match your current vibe.",
-      icon: (
-  <svg className="w-12 h-12 text-purple-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-  </svg>
-)
-    },
-    {
-      title: "Smart Watchlists",
-    desc: "Keep all your favorites from different platforms in one place. Create your ultimate watchlist.",
-      icon: (
-  <svg className="w-12 h-12 text-purple-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
-  </svg>
-)
-    },
-    {
-      title: "End Decision Fatigue",
-    desc: "Stop scrolling and start watching. Save the time you spend searching and find the perfect match immediately.",
-      icon: (
-  <svg className="w-12 h-12 text-purple-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-  </svg>
-)
-    }
-  ];
-
+  // --- GİRİŞ YAPMIŞ KULLANICI ---
   return (
-    <div className="min-h-screen bg-black overflow-x-hidden">
-      
-      {/* 1. HERO BÖLÜMÜ */}
-      <div className="relative w-full h-[85vh]">
-       {/* --- ARKA PLAN (4 RESİM ALT ALTA) --- 
-             
-          */}
-          <div className="absolute inset-0 flex flex-col z-0">
-            <div className="flex-1 w-full bg-cover bg-center" style={{ backgroundImage: `url(${back1Image})` }} />
-            <div className="flex-1 w-full bg-cover bg-center" style={{ backgroundImage: `url(${back2Image})` }} />
-            <div className="flex-1 w-full bg-cover bg-center" style={{ backgroundImage: `url(${back3Image})` }} />
-            
-             {/* Siyah Karartma */}
-          <div className="absolute inset-0 bg-black/60 bg-gradient-to-t from-black via-black/40 to-black/60"></div>
-        </div>
-
-        {/* Yazılar ve Buton */}
-        <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-4">
-          <h1 className="text-4xl md:text-6xl font-black text-white max-w-4xl leading-tight drop-shadow-xl">
-            Can't decide what to watch?
-          </h1>
-          <p className="text-lg md:text-2xl text-white mt-4 font-medium drop-shadow-md">
-            Stop scrolling for hours. Let AI learn your taste and find the perfect movie or TV show for you in seconds.
-          </p>
-          <div className="mt-8 w-full max-w-md">
-             <Link 
-                to="/login"
-               className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-xl font-bold py-3 px-8 rounded flex items-center justify-center gap-2 transition-all hover:scale-105 shadow-lg shadow-purple-500/40 mx-auto"
-              >
-                Start Exploring <span className="text-2xl">›</span>
-              </Link>
-          </div>
-        </div>
-      </div>
-
-     {/* 2. KAVİSLİ GEÇİŞ (THE ARCH) */}
-      
-      <div className="relative -mt-16 w-full h-24 overflow-hidden z-20">
-          {/* Dış Katman: Gradient Arka Plan + Shadow */}
-          <div className="absolute left-[-10%] w-[120%] h-[200%] rounded-[50%] bg-gradient-to-r from-purple-600 to-pink-600 pt-[4px] shadow-[0_-5px_30px_rgba(219,39,119,0.4)]">
-              {/* İç Katman: Siyah Arka Plan (Maskeleme görevi görür) */}
-              <div className="w-full h-full bg-black rounded-[50%]"></div>
-          </div>
-      </div>
-
-      {/* 3. İÇERİK ALANI (Siyah Arka Plan) */}
-      <div className="relative z-30 bg-black pb-20 px-4 md:px-16">
-        
-        {/* A) TREND LİSTESİ */}
-<div className="-mt-12 mb-16">
-   
-   <MovieRow
-    title="Trending Now" 
-    movies={data.trending?.slice(0, 10)}
-    size="normal"
-    isRanked={true}
-    variant="ai-rank"  
-    gap="gap-4" 
-/>
-</div>
-
-        {/* B) BİZE KATILMANIZ İÇİN NEDENLER (Grid Kartlar) */}
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">
-            More Reasons to Join
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {reasons.map((item, index) => (
-              <div 
-                key={index} 
-                className="bg-gradient-to-br from-[#1e1b26] to-[#131118] p-6 rounded-2xl border border-white/10 relative overflow-hidden group min-h-[250px] flex flex-col justify-between"
-              >
-                {/* İçerik */}
-                <div>
-                  <h3 className="text-xl font-bold text-white mb-2">{item.title}</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed">{item.desc}</p>
-                </div>
-
-                {/* İkon (Sağ alt köşe) */}
-                <div className="flex justify-end mt-4">
-                   {item.icon}
-                </div>
-                
-                {/* Hafif parlama efekti */}
-                <div className="absolute inset-0 bg-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-      </div>
-    </div>
-  );
-}
-  // --- GİRİŞ YAPMIŞ KULLANICI GÖRÜNÜMÜ ---
-  return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-black text-white">
       <HeroSection movie={data.hero} />
 
-      <div className="relative -mt-32 z-10 space-y-8 pb-16 pl-4 md:pl-8">
-        {isAuthenticated && data.personalized.length > 0 && (
-          <MovieRow
-            title="Sizin İçin Öneriler"
-            movies={data.personalized}
-            size="large"
-          />
-        )}
+      <div className="relative -mt-32 z-10 pb-20">
+        <div className="max-w-screen-2xl mx-auto px-4 md:px-8 space-y-10">
+          {data.personalized.length > 0 && (
+            <MovieRow
+              title="Sizin İçin Öneriler"
+              movies={data.personalized}
+              size="large"
+            />
+          )}
 
-        <MovieRow
-          title="Şu Anda Trend"
-          movies={data.trending}
-          size="normal"
-        />
-
-        <MovieRow
-          title="Popüler Filmler"
-          movies={data.popular}
-          size="normal"
-        />
-
-        <MovieRow
-          title="En İyi Puanlananlar"
-          movies={data.topRated}
-          size="normal"
-        />
-
-        <MovieRow
-          title="Popüler Diziler"
-          movies={data.series}
-          size="normal"
-        />
+          <MovieRow title="Şu Anda Trend" movies={data.trending} size="normal" />
+          <MovieRow title="Popüler Filmler" movies={data.popular} size="normal" />
+          <MovieRow title="En İyi Puanlananlar" movies={data.topRated} size="normal" />
+          <MovieRow title="Popüler Diziler" movies={data.series} size="normal" />
+        </div>
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { moviesAPI, recommendationsAPI } from '../services/api';
 import { Play, Plus, Star, Calendar, Clock, Loader2 } from 'lucide-react';
 import MovieRow from '../components/MovieRow';
+import Loading from "../components/Loading";
 
 const MovieDetail = () => {
   const { id } = useParams();
@@ -31,19 +32,27 @@ const MovieDetail = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="w-12 h-12 animate-spin text-netflix-red" />
-      </div>
-    );
-  }
+   if (loading) {
+  return <Loading />;
+}
 
-  if (!movie) {
+ if (!movie) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen">
-        <h2 className="text-2xl font-bold mb-4">İçerik bulunamadı</h2>
-        <Link to="/" className="text-netflix-red hover:underline">
+      // 1. Arka planı siyah yaptık (bg-netflix-black)
+      <div className="flex flex-col items-center justify-center h-screen bg-netflix-black text-white px-4 text-center">
+        
+      
+
+        <h2 className="text-3xl font-bold mb-2">İçerik Bulunamadı</h2>
+        <p className="text-gray-400 mb-8">Aradığınız film silinmiş veya hiç eklenmemiş olabilir.</p>
+
+        {/* 2. Linki sadece yazı olmaktan çıkarıp GRADIENT BUTON haline getirdik */}
+        <Link 
+          to="/" 
+          className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 
+                     text-white font-bold py-3 px-8 rounded-xl shadow-lg 
+                     transform hover:scale-105 transition-all duration-300"
+        >
           Ana Sayfaya Dön
         </Link>
       </div>

@@ -1,23 +1,21 @@
 import { useState, useRef, useEffect } from "react";
 import { aiAPI } from "../services/api";
 import { useAuth } from "../context/AuthContext";
-
+import back1Image from '../assets/images/back1.png';
+import back2Image from '../assets/images/back2.png';
+import back3Image from '../assets/images/back3.png';
 export default function AIRecommendation() {
   const { user } = useAuth();
   const [message, setMessage] = useState("");
   const [chat, setChat] = useState([]);
   const [loading, setLoading] = useState(false);
-  
-  // Mesaj geldiğinde otomatik aşağı kaydırmak için ref
-  const chatEndRef = useRef(null);
 
-  const scrollToBottom = () => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const chatEndRef = useRef(null);
+  const scrollToBottom = () => chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
 
   useEffect(() => {
     scrollToBottom();
-  }, [chat]);
+  }, [chat, loading]);
 
   const send = async (e) => {
     e.preventDefault();
@@ -25,11 +23,12 @@ export default function AIRecommendation() {
 
     const userMsg = { role: "user", text: message };
     setChat((c) => [...c, userMsg]);
+    const outgoing = message; // state sıfırlanmadan önce yakala
     setMessage("");
     setLoading(true);
 
     try {
-      const res = await aiAPI.chat({ message, conversationHistory: chat });
+      const res = await aiAPI.chat({ message: outgoing, conversationHistory: chat });
       const aiMsg = {
         role: "ai",
         text: res.data.data.message,
@@ -44,128 +43,245 @@ export default function AIRecommendation() {
   };
 
   return (
-    // 1. ANA ARKA PLAN: Koyu kömür/siyah ton (#09090b)
-    <div className="relative min-h-screen w-full font-sans bg-[#09090b] overflow-hidden flex flex-col items-center pt-24 px-4 pb-10">
+    <div className="relative min-h-screen w-full overflow-hidden bg-[#07070a] text-white">
+    {/* BACKGROUND (3 parçalı) */}
+    <div className="absolute inset-0 z-0 overflow-hidden">
+      <div className="absolute inset-0 flex flex-col">
+        <div className="flex-1 w-full bg-cover bg-center" style={{ backgroundImage: `url(${back1Image})` }} />
+        <div className="flex-1 w-full bg-cover bg-center" style={{ backgroundImage: `url(${back2Image})` }} />
+        <div className="flex-1 w-full bg-cover bg-center" style={{ backgroundImage: `url(${back3Image})` }} />
+      </div>
+
+      <div className="absolute inset-0 bg-black/65 bg-gradient-to-t from-black via-black/40 to-black/70" />
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(1200px 700px at 50% 25%, rgba(0,0,0,0) 35%, rgba(0,0,0,.8) 85%)",
+        }}
+      />
+
+      <div className="absolute -top-24 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-purple-600/20 blur-3xl" />
+      <div className="absolute bottom-[-140px] left-[12%] h-[460px] w-[460px] rounded-full bg-pink-500/14 blur-3xl" />
+      <div className="absolute bottom-[-160px] right-[10%] h-[520px] w-[520px] rounded-full bg-indigo-500/12 blur-3xl" />
+    </div>
+
       
-      {/* Arka Plan Süslemeleri (Gri ve Metalik) */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-gray-400/10 rounded-full blur-[100px] pointer-events-none"></div>
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-zinc-600/10 rounded-full blur-[100px] pointer-events-none"></div>
 
-      {/* 2. WRAPPER & GLOW (Işık Efekti - KORUNDU) */}
-      <div className="relative w-full max-w-4xl z-10 group">
-        
-        {/* Arkadan Vuran Pembemsi/Mor Işık */}
-        <div className="absolute -inset-[20px] rounded-[40px] bg-gradient-to-tr from-pink-600/40 via-purple-500/30 to-indigo-600/40 blur-3xl opacity-60 -z-10 pointer-events-none transition-all duration-500 group-hover:opacity-90 group-hover:blur-[40px]"></div>
+      {/* Main container */}
+       <div className="relative z-10 mx-auto w-full max-w-6xl px-4 pt-24 pb-8">
+      <main className="relative z-10 mx-auto mt-6 w-full max-w-6xl px-4 pb-10">
+        <div className="grid gap-6 lg:grid-cols-[1.25fr_.75fr]">
+          {/* Chat Card */}
+          <section className="group relative overflow-hidden rounded-3xl border border-white/10 bg-black/40 backdrop-blur-xl shadow-2xl">
+            {/* Glow outline */}
+            <div className="pointer-events-none absolute -inset-10 opacity-60 blur-3xl transition-all duration-500 group-hover:opacity-90"
+              style={{
+                background:
+                  "radial-gradient(600px 260px at 20% 0%, rgba(168,85,247,.35), transparent 60%), radial-gradient(520px 260px at 80% 0%, rgba(236,72,153,.28), transparent 60%)",
+              }}
+            />
 
-        {/* 3. ANA KUTU (Senin İstediğin Glassmorphism Tasarım) */}
-        <div className="relative z-10 w-full max-w-4xl bg-black/70 border border-white/10 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[80vh]">
-          
-         {/* Header Kısmı */}
-<div className="p-6 border-b border-white/10 bg-black/40 flex items-center justify-center">
-  
-  {/* İçerik Kutusu (text-center ile içindeki her şeyi ortalar) */}
-  <div className="text-center">
-    
-    <h1 className="text-2xl font-bold text-white">
-      {/* Yıldız */}
-      <span className="text-2xl mr-2">✨</span>
-      {/* Başlık */}
+            {/* Header */}
+           {/* Header: px-6 ve py-5 ideal boşluğu sağlar */}
+<div className="relative flex items-center justify-between gap-4 border-b border-white/10 bg-black/35 px-6 pt-10 pb-2">
+  <div>
+    {/* h1'e 'leading-tight' ekleyerek metin bloğunu sıkılaştırdık */}
+    <h1 className="flex items-center gap-2 text-lg sm:text-xl font-bold leading-tight">
+      {/* İkon kutusu */}
+      <span className="grid h-10 w-10 place-items-center ">
+        ✨
+      </span>
       AI Recommendation
     </h1>
-
-    <p className="text-zinc-400 text-sm mt-1">
+    <p className="mt-1.5  text-sm text-white/60">
       Merhaba <span className="text-white font-medium">{user?.name}</span>, bugün ne izlemek istersin?
     </p>
+  </div>
 
+  {/* Sağdaki Etiket */}
+  <div className="hidden sm:flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70">
+    <span className="text-purple-300 animate-pulse">•</span> Akıllı öneri modu
   </div>
 </div>
 
-          {/* 3. CHAT ALANI */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
-            {chat.length === 0 && (
-              <div className="h-full flex flex-col items-center justify-center text-zinc-300">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                  <p>Bir film türü veya ruh hali yazarak sohbete başla...</p>
-              </div>
-            )}
+            {/* Chat body */}
+            <div className="relative h-[62vh] overflow-y-auto px-6 py-6 space-y-5 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+              {chat.length === 0 && !loading && (
+                <div className="grid h-full place-items-center">
+                  <div className="text-center">
+                    <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-3xl border border-white/10 bg-white/5">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white/70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                    </div>
+                    <p className="text-white/70">Bir tür, ruh hali veya örnek film yaz.</p>
+                    
+                  </div>
+                </div>
+              )}
 
-            {chat.map((m, i) => (
-              <div
-                key={i}
-                className={`flex w-full ${m.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                <div
-                  className={`max-w-[85%] p-4 rounded-2xl shadow-md backdrop-blur-sm text-sm md:text-base leading-relaxed ${
-                    m.role === "user"
-                      ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-br-none" // User: Login butonu tarzı gradient
-                      : "bg-zinc-900/80 border border-white/10 text-zinc-100 rounded-bl-none" // AI: Login input tarzı koyu stil
-                  }`}
-                >
-                  <div className="whitespace-pre-wrap">{m.text}</div>
-
-                  {/* Eğer öneriler varsa burada kart olarak gösterebiliriz */}
-                  {m.recommendations && m.recommendations.length > 0 && (
-                      <div className="mt-4 grid grid-cols-2 gap-2">
-                          {/* Örnek gösterim, backend verisine göre düzenlenebilir */}
-                          {m.recommendations.map((rec, idx) => (
-                              <div key={idx} className="bg-black/40 p-2 rounded border border-white/5 text-xs">
-                                  {rec.title || "Film Önerisi"}
-                              </div>
-                          ))}
+              {chat.map((m, i) => {
+                const isUser = m.role === "user";
+                return (
+                  <div key={i} className={`flex w-full ${isUser ? "justify-end" : "justify-start"}`}>
+                    <div className={`max-w-[86%] sm:max-w-[78%]`}>
+                      {/* Badge */}
+                      <div className={`mb-1 flex ${isUser ? "justify-end" : "justify-start"}`}>
+                        <span
+                          className={`text-[11px] px-2 py-0.5 rounded-full border ${
+                            isUser
+                              ? "bg-white/5 border-white/10 text-white/70"
+                              : "bg-purple-500/10 border-purple-400/20 text-purple-200/80"
+                          }`}
+                        >
+                          {isUser ? "Sen" : "CINEMO AI"}
+                        </span>
                       </div>
-                  )}
+
+                      {/* Bubble */}
+                      <div
+                        className={`rounded-2xl px-4 py-3 text-sm sm:text-[15px] leading-relaxed shadow-lg ${
+                          isUser
+                            ? "bg-purple-500/20 border border-purple-500/30 text-purple-100"
+                            : "bg-white/5 border border-white/10 text-white/85"
+                        }`}
+                        style={
+                          isUser
+                            ? { boxShadow: "0 10px 30px rgba(168,85,247,.18), 0 10px 26px rgba(236,72,153,.10)" }
+                            : { boxShadow: "0 12px 30px rgba(0,0,0,.35)" }
+                        }
+                      >
+                        <div className="whitespace-pre-wrap">{m.text}</div>
+
+                        {/* Recommendations cards */}
+                        {m.recommendations && m.recommendations.length > 0 && (
+                          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {m.recommendations.map((rec, idx) => (
+                              <div
+                                key={idx}
+                                className="rounded-xl border border-white/10 bg-black/30 p-3"
+                              >
+                                <div className="text-xs text-white/60">Öneri</div>
+                                <div className="mt-0.5 font-medium text-white/90">
+                                  {rec.title || "Film Önerisi"}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Loading typing bubble */}
+              {loading && (
+                <div className="flex justify-start">
+                  <div className="max-w-[78%]">
+                    <div className="mb-1 flex justify-start">
+                      <span className="text-[11px] px-2 py-0.5 rounded-full border bg-purple-500/10 border-purple-400/20 text-purple-200/80">
+                        CINEMO AI
+                      </span>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-pink-400 animate-bounce" style={{ animationDelay: "0ms" }} />
+                        <span className="h-2 w-2 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "150ms" }} />
+                        <span className="h-2 w-2 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+                        <span className="ml-2 text-xs text-white/55">Düşünüyorum…</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )}
 
-            {/* Yükleniyor Animasyonu */}
-            {loading && (
-              <div className="flex justify-start animate-pulse">
-                <div className="bg-zinc-900/80 border border-white/10 px-4 py-3 rounded-2xl rounded-bl-none flex gap-2 items-center">
-                  <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                  <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                  <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Composer */}
+            <div className="relative border-t border-white/10 bg-black/35 p-4">
+              <form onSubmit={send} className="flex items-end gap-3">
+                <div className="relative flex-1">
+                  <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 blur-md opacity-60" />
+                  <input
+                    className="relative w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-4 pr-12 text-white/90 placeholder-white/40 outline-none
+                               focus:border-white/20 focus:ring-2 focus:ring-purple-500/20 transition"
+                    placeholder="What do you watch?"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    disabled={loading}
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-white/35">
+                    ⏎
+                  </div>
                 </div>
+
+                <button
+                  type="submit"
+                  disabled={loading || !message.trim()}
+                  className="group relative grid h-[52px] w-[52px] place-items-center rounded-2xl
+                             bg-gradient-to-r from-purple-600 to-pink-600
+                             shadow-[0_10px_30px_rgba(168,85,247,.18)]
+                             hover:shadow-[0_14px_38px_rgba(236,72,153,.16)]
+                             hover:scale-[1.03] active:scale-95 transition
+                             disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition"
+                        style={{ boxShadow: "0 0 0 1px rgba(255,255,255,.08) inset" }} />
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                  </svg>
+                </button>
+              </form>
+
+              <div className="mt-2 text-[11px] text-white/40">
+                İpucu: “kısa” / “uzun”, “tek mekân”, “IMDb yüksek”, “Netflix tarzı” gibi filtreler yazabilirsin.
               </div>
-            )}
-            <div ref={chatEndRef} />
-          </div>
+            </div>
+          </section>
 
-          {/* 4. INPUT ALANI */}
-          <div className="p-4 bg-black/40 border-t border-white/10">
-            <form onSubmit={send} className="relative flex items-center gap-3">
-              
-              <input
-                className="flex-1 bg-zinc-900/50 text-white pl-5 pr-5 py-4 rounded-xl border border-white/10 
-                          focus:bg-zinc-900 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/30 
-                          transition-all duration-300 placeholder-zinc-300 shadow-inner"
-                placeholder="Bilim kurgu severim, şaşırtıcı sonlu bir film öner..."
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                disabled={loading}
-              />
-              
-              <button 
-    type="submit" 
-    disabled={loading || !message.trim()}
-    className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 
-               text-white p-4 rounded-xl shadow-[0_4px_14px_0_rgba(192,38,211,0.35)] 
-               hover:shadow-[0_6px_20px_rgba(219,39,119,0.3)] hover:scale-105 active:scale-95 
-               transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
->
-    {/* Yeni İkon: Modern Send */}
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="22" y1="2" x2="11" y2="13"></line>
-        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-    </svg>
-</button>
-            </form>
-          </div>
+          {/* Right panel: Quick prompts (modern/pro feeling) */}
+          <aside className="relative overflow-hidden rounded-3xl border border-white/10 bg-black/35 backdrop-blur-xl shadow-2xl">
+            <div className="p-6 border-b border-white/10 bg-black/25">
+              <h2 className="text-lg font-bold">Hızlı Başlangıç</h2>
+              <p className="mt-1 text-sm text-white/60">
+                Tek tıkla örnek istekler gönder.
+              </p>
+            </div>
 
+            <div className="p-6 space-y-3">
+              {[
+                "Gerilim seviyorum, ters köşe olsun.",
+                "Romantik ama klişe olmasın.",
+                "Kısa ve eğlenceli bir film öner.",
+                "Uzun soluklu, sürükleyici bir dizi öner.",
+                "Mind-bending bilim kurgu: Interstellar tarzı.",
+              ].map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setMessage(t)}
+                  className="w-full text-left rounded-2xl border border-white/10 bg-white/5 px-4 py-3
+                             hover:bg-white/8 hover:border-white/15 transition"
+                >
+                  <div className="text-sm text-white/85">{t}</div>
+                  <div className="mt-1 text-[11px] text-white/45">Mesaj kutusuna ekle</div>
+                </button>
+              ))}
+            </div>
+          </aside>
         </div>
-      </div>
+      </main>
+
+      <style>{`
+        @keyframes cDemoShimmer {
+          0% { background-position: 0% 50%; }
+          100% { background-position: 200% 50%; }
+        }
+      `}</style>
+    </div>
     </div>
   );
 }

@@ -5,18 +5,14 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import MovieDetail from "./pages/MovieDetail";
 import AIRecommendation from "./components/AIRecommendation";
-import Profile from "./pages/Profile"; // 1. EKLEME: Buraya import et
-// App Routes Component (artık public)
+import Profile from "./pages/Profile"; 
+import Loading from "./components/Loading";
 const AppRoutes = () => {
   const { isAuthenticated, loading } = useAuth();
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-netflix-red"></div>
-      </div>
-    );
-  }
+ if (loading) {
+  return <Loading />;
+}
 
   return (
     <>
