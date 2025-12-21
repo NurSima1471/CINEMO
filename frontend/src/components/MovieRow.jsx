@@ -1,7 +1,17 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { Link } from 'react-router-dom'; // Yönlendirme için eklendi
 import MovieCard from "./MovieCard";
+import { ChevronRight } from 'lucide-react'; 
 
-export default function MovieRow({ title, movies = [], size = "normal", isRanked = false, gap = "gap-4" , variant = "standard"}) {
+export default function MovieRow({ 
+  title, 
+  movies = [], 
+  size = "normal", 
+  isRanked = false, 
+  gap = "gap-4", 
+  variant = "standard",
+  linkTo // Yeni eklenen prop
+}) {
   const sliderRef = useRef(null);
 
   const [currentPage, setCurrentPage] = useState(0);
@@ -47,8 +57,22 @@ export default function MovieRow({ title, movies = [], size = "normal", isRanked
 
   return (
     <section className="px-10 md:px-12 my-8 group/row relative max-w-[1400px] mx-auto">
+      {/* BAŞLIK VE PAGINATION KISMI */}
       <div className="flex justify-between items-center mb-3 px-2">
-        <h2 className="text-lg md:text-xl font-bold text-white">{title}</h2>
+        <h2 className="text-lg md:text-xl font-bold text-white hover:text-gray-300 transition cursor-pointer group/title">
+          {linkTo ? (
+            <Link to={linkTo} className="flex items-center gap-2">
+              {title}
+              {/* Hover olunca görünen 'Tümünü Gör' yazısı */}
+              <span className="text-xs md:text-sm font-semibold text-cyan-400 opacity-0 group-hover/title:opacity-100 transition-all duration-300 translate-x-[-10px] group-hover/title:translate-x-0 flex items-center">
+                Tümünü Gör
+                <ChevronRight className="w-4 h-4" />
+              </span>
+            </Link>
+          ) : (
+            title
+          )}
+        </h2>
         
         {totalPages > 1 && (
           <div className="flex gap-1 mb-1 items-center">
@@ -67,22 +91,21 @@ export default function MovieRow({ title, movies = [], size = "normal", isRanked
       
       <div className="relative w-fit mx-auto max-w-full">
         
-    {/* SOL OK */}
-<button 
-  onClick={slideLeft}
-  className={`absolute -left-8 md:-left-12 top-1/2 -translate-y-1/2 z-50 w-6 md:w-8 h-32 md:h-40 bg-zinc-800 text-white/70 hidden group-hover/row:flex items-center justify-center transition-all duration-300 cursor-pointer hover:bg-zinc-700 hover:text-white hover:scale-y-105 rounded-lg border border-white/5 shadow-xl
-    ${!isMoved ? 'hidden' : ''}`}
->
-   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 md:w-5 md:h-5">
-     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-   </svg>
-</button>
+        {/* SOL OK */}
+        <button 
+          onClick={slideLeft}
+          className={`absolute -left-8 md:-left-12 top-1/2 -translate-y-1/2 z-50 w-6 md:w-8 h-32 md:h-40 bg-zinc-800 text-white/70 hidden group-hover/row:flex items-center justify-center transition-all duration-300 cursor-pointer hover:bg-zinc-700 hover:text-white hover:scale-y-105 rounded-lg border border-white/5 shadow-xl
+            ${!isMoved ? 'hidden' : ''}`}
+        >
+           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 md:w-5 md:h-5">
+             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+           </svg>
+        </button>
 
         {/* LİSTE */}
         <div 
           ref={sliderRef}
           onScroll={handleScroll}
-          // gap değişkeni buradan geliyor (gap-1 veya gap-4)
           className={`flex ${gap} overflow-x-scroll scroll-smooth scrollbar-hide items-center px-4 py-12`}
         >
           {movies.map((m, index) => (
@@ -96,15 +119,15 @@ export default function MovieRow({ title, movies = [], size = "normal", isRanked
           ))}
         </div>
 
-       {/* SAĞ OK */}
-<button 
-  onClick={slideRight}
-  className="absolute -right-8 md:-right-12 top-1/2 -translate-y-1/2 z-50 w-6 md:w-8 h-32 md:h-40 bg-zinc-800 text-white/70 hidden group-hover/row:flex items-center justify-center transition-all duration-300 cursor-pointer hover:bg-zinc-700 hover:text-white hover:scale-y-105 rounded-lg border border-white/5 shadow-xl"
->
-   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 md:w-5 md:h-5">
-     <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-   </svg>
-</button>
+        {/* SAĞ OK */}
+        <button 
+          onClick={slideRight}
+          className="absolute -right-8 md:-right-12 top-1/2 -translate-y-1/2 z-50 w-6 md:w-8 h-32 md:h-40 bg-zinc-800 text-white/70 hidden group-hover/row:flex items-center justify-center transition-all duration-300 cursor-pointer hover:bg-zinc-700 hover:text-white hover:scale-y-105 rounded-lg border border-white/5 shadow-xl"
+        >
+           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 md:w-5 md:h-5">
+             <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+           </svg>
+        </button>
       </div>
     </section>
   );

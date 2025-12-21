@@ -24,7 +24,22 @@ const userSchema = new mongoose.Schema(
       genres: { type: [String], default: [] },
       languages: { type: [String], default: [] },
     },
-
+    
+    // --- YENİ EKLENEN KISIM: WATCHLIST (Listem) ---
+    // watchHistory'den farkı: Henüz izlenmemiş, kenara ayrılmış olmasıdır.
+    watchlist: {
+      type: [
+        {
+          tmdbId: { type: Number, required: true }, // Diğer alanlarla uyumlu olması için Number yaptık
+          title: { type: String },
+          posterPath: { type: String },
+          voteAverage: { type: Number },
+          addedAt: { type: Date, default: Date.now },
+        },
+      ],
+      default: [],
+    },
+    
     // Kullanıcının izleme geçmişi ve değerlendirmeleri
     watchHistory: {
       type: [

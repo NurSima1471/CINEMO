@@ -7,17 +7,17 @@ import MovieDetail from "./pages/MovieDetail";
 import AIRecommendation from "./components/AIRecommendation";
 import Profile from "./pages/Profile"; 
 import Loading from "./components/Loading";
+import CategoryPage from './pages/CategoryPage';
+
 const AppRoutes = () => {
   const { isAuthenticated, loading } = useAuth();
 
- if (loading) {
-  return <Loading />;
-}
+  if (loading) {
+    return <Loading />;
+  }
 
   return (
     <>
-      {/* Header artık her sayfada görünsün istersen böyle bırak.
-          Sadece login’de görünmesin dersen alttaki koşulu kullanabilirsin. */}
       <Header />
 
       <Routes>
@@ -30,15 +30,25 @@ const AppRoutes = () => {
         {/* Public Home */}
         <Route path="/" element={<Home />} />
 
+        {/* Category Page */}
+        <Route path="/category/:type" element={<CategoryPage />} />
+
         {/* Public Movie Detail */}
         <Route path="/movie/:id" element={<MovieDetail />} />
 
+        {/* --- YENİ EKLENECEK KISIM: DİZİ DETAYI --- */}
+        {/* /tv/12345 adresine gidildiğinde de MovieDetail sayfasını açar */}
+        <Route path="/tv/:id" element={<MovieDetail />} />
+        {/* ----------------------------------------- */}
+
         {/* Public AI Page */}
         <Route path="/ai-recommendations" element={<AIRecommendation />} />
-         <Route 
-            path="/profile" 
-            element={isAuthenticated ? <Profile /> : <Navigate to="/login" />} 
+        
+        <Route 
+          path="/profile" 
+          element={isAuthenticated ? <Profile /> : <Navigate to="/login" />} 
         />
+        
         {/* 404 */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>

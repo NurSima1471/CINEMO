@@ -1,83 +1,145 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { moviesAPI, recommendationsAPI } from '../services/api';
-import { Play, Plus, Star, Calendar, Clock, Loader2 } from 'lucide-react';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'; // 1. useLocation Eklendi
+import { moviesAPI, recommendationsAPI, userAPI } from '../services/api';
+import { Plus, Check, Star, Calendar, Clock, Layers } from 'lucide-react'; // Layers ikonu eklendi (Sezon için)
 import MovieRow from '../components/MovieRow';
 import Loading from "../components/Loading";
 
 const MovieDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation(); // 2. Location tanımlandı
+
+  // URL içinde '/tv/' geçiyorsa bu bir dizidir
+  const isTvShow = location.pathname.includes('/tv/');
+
   const [movie, setMovie] = useState(null);
   const [similar, setSimilar] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  const [isInList, setIsInList] = useState(false);
+  const [listLoading, setListLoading] = useState(false);
 
   useEffect(() => {
     fetchMovieDetails();
-  }, [id]);
+    checkWatchlistStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, isTvShow]); // isTvShow dependency'e eklendi
 
   const fetchMovieDetails = async () => {
     try {
       setLoading(true);
+      
+      // 3. API SEÇİMİ: Dizi ise TV servislerini, değilse Film servislerini çağır
+      // NOT: api.js dosyanızda getTvDetails ve getTvRecommendations fonksiyonlarının olduğundan emin olun.
+      // Yoksa aşağıya eklemeniz gereken kodu yazdım.
+      
+      const detailPromise = isTvShow 
+        ? moviesAPI.getTvDetails(id) 
+        : moviesAPI.getDetails(id);
+
+      const similarPromise = isTvShow
+        ? recommendationsAPI.getTvSimilar(id)
+        : recommendationsAPI.getSimilar(id);
+
       const [movieRes, similarRes] = await Promise.all([
-        moviesAPI.getDetails(id),
-        recommendationsAPI.getSimilar(id)
+        detailPromise,
+        similarPromise
       ]);
 
-      setMovie(movieRes.data.data);
-      setSimilar(similarRes.data.data);
+      setMovie(movieRes.data.data || movieRes.data);
+      setSimilar(similarRes.data.data || similarRes.data.results || []);
     } catch (error) {
-      console.error('Error fetching movie details:', error);
+      console.error('Error fetching details:', error);
     } finally {
       setLoading(false);
     }
   };
 
-   if (loading) {
-  return <Loading />;
-}
+  const checkWatchlistStatus = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
- if (!movie) {
-    return (
-      // 1. Arka planı siyah yaptık (bg-netflix-black)
-      <div className="flex flex-col items-center justify-center h-screen bg-netflix-black text-white px-4 text-center">
-        
+    try {
+      const res = await userAPI.getProfile(); 
+      const watchlist = res.data.data.watchlist || [];
+      const found = watchlist.some(item => Number(item.tmdbId) === Number(id));
+      setIsInList(found);
+    } catch (error) {
+      console.log("Liste durumu kontrol edilemedi:", error);
+    }
+  };
+
+  const handleToggleList = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login"); 
+      return;
+    }
+
+    const previousState = isInList;
+    setIsInList(!previousState); 
+    setListLoading(true);
+
+    try {
+      const movieIdToSend = movie?.id || Number(id); 
+
+      const movieData = {
+        tmdbId: movieIdToSend, 
+        title: movie.title || movie.name, // Dizi için 'name', film için 'title'
+        posterPath: movie.posterPath || movie.poster_path,
+        voteAverage: movie.voteAverage || movie.vote_average || 0,
+        mediaType: isTvShow ? 'tv' : 'movie' // İsterseniz backend'e tipini de gönderebilirsiniz
+      };
+
+      await userAPI.toggleWatchlist(movieData);
       
+    } catch (error) {
+      console.error("Listeye ekleme hatası:", error);
+      setIsInList(previousState);
+      alert("İşlem başarısız oldu.");
+    } finally {
+      setListLoading(false);
+    }
+  };
 
+  if (loading) return <Loading />;
+
+  if (!movie) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-netflix-black text-white px-4 text-center">
         <h2 className="text-3xl font-bold mb-2">İçerik Bulunamadı</h2>
-        <p className="text-gray-400 mb-8">Aradığınız film silinmiş veya hiç eklenmemiş olabilir.</p>
-
-        {/* 2. Linki sadece yazı olmaktan çıkarıp GRADIENT BUTON haline getirdik */}
-        <Link 
-          to="/" 
-          className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 
-                     text-white font-bold py-3 px-8 rounded-xl shadow-lg 
-                     transform hover:scale-105 transition-all duration-300"
-        >
-          Ana Sayfaya Dön
-        </Link>
+        <Link to="/" className="text-purple-500 hover:underline">Ana Sayfaya Dön</Link>
       </div>
     );
   }
 
-  const backdropUrl = movie.backdrop_path
-    ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}`
-    : null;
+  const backdropPath = movie.backdropPath || movie.backdrop_path;
+  const posterPath = movie.posterPath || movie.poster_path;
+  
+  const backdropUrl = backdropPath ? `https://image.tmdb.org/t/p/original${backdropPath}` : null;
+  const posterUrl = posterPath ? `https://image.tmdb.org/t/p/w500${posterPath}` : null;
 
-  const posterUrl = movie.poster_path
-    ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-    : null;
+  // Dizi için bölüm süresi veya film süresi
+  const runtime = movie.runtime || (movie.episode_run_time ? movie.episode_run_time[0] : null);
+  const releaseDate = movie.release_date || movie.first_air_date;
+
+  const getRatingStyle = (rating) => {
+    if (!rating) return { box: "", star: "" };
+    if (rating >= 7) return { box: "bg-green-500/20 text-green-400 border-green-500/50", star: "fill-green-400" };
+    else if (rating >= 4) return { box: "bg-yellow-500/20 text-yellow-400 border-yellow-500/50", star: "fill-yellow-400" };
+    else return { box: "bg-red-500/20 text-red-400 border-red-500/50", star: "fill-red-400" };
+  };
+
+  const currentRating = movie.voteAverage || movie.vote_average;
+  const ratingStyle = getRatingStyle(currentRating);
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section */}
       <div className="relative h-screen">
         {backdropUrl && (
           <div className="absolute inset-0">
-            <img
-              src={backdropUrl}
-              alt={movie.title || movie.name}
-              className="w-full h-full object-cover"
-            />
+            <img src={backdropUrl} alt={movie.title || movie.name} className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-netflix-black via-netflix-black/70 to-netflix-black/30" />
             <div className="absolute inset-0 bg-gradient-to-r from-netflix-black via-netflix-black/50 to-transparent" />
           </div>
@@ -85,88 +147,78 @@ const MovieDetail = () => {
 
         <div className="relative h-full flex items-end px-4 md:px-8 lg:px-16 pb-32">
           <div className="flex flex-col md:flex-row gap-8 max-w-7xl">
-            {/* Poster */}
             {posterUrl && (
-              <img
-                src={posterUrl}
-                alt={movie.title || movie.name}
-                className="w-64 rounded-lg shadow-2xl hidden md:block"
-              />
+              <img src={posterUrl} alt={movie.title || movie.name} className="w-64 rounded-lg shadow-2xl hidden md:block" />
             )}
 
-            {/* Info */}
             <div className="flex-1 space-y-6">
-              <h1 className="text-4xl md:text-6xl font-bold">
-                {movie.title || movie.name}
-              </h1>
-
-              {movie.tagline && (
-                <p className="text-xl text-gray-300 italic">{movie.tagline}</p>
-              )}
+              <h1 className="text-4xl md:text-6xl font-bold">{movie.title || movie.name}</h1>
+              {movie.tagline && <p className="text-xl text-gray-300 italic">{movie.tagline}</p>}
 
               <div className="flex flex-wrap items-center gap-4 text-sm">
-                {movie.vote_average && (
-                  <div className="flex items-center space-x-1 bg-yellow-600 px-3 py-1 rounded">
-                    <Star className="w-4 h-4 fill-white" />
-                    <span className="font-semibold">
-                      {movie.vote_average.toFixed(1)}
-                    </span>
+                {currentRating > 0 && (
+                  <div className={`flex items-center space-x-1 px-3 py-1 rounded-md backdrop-blur-sm border ${ratingStyle.box}`}>
+                    <Star className={`w-4 h-4 ${ratingStyle.star}`} />
+                    <span className="font-bold text-base">{Number(currentRating).toFixed(1)}</span>
                   </div>
                 )}
-
-                {(movie.release_date || movie.first_air_date) && (
-                  <div className="flex items-center space-x-2">
+                
+                {releaseDate && (
+                  <div className="flex items-center space-x-2 text-gray-300">
                     <Calendar className="w-4 h-4" />
-                    <span>
-                      {new Date(
-                        movie.release_date || movie.first_air_date
-                      ).getFullYear()}
-                    </span>
+                    <span>{new Date(releaseDate).getFullYear()}</span>
                   </div>
                 )}
 
-                {movie.runtime && (
-                  <div className="flex items-center space-x-2">
+                {runtime && (
+                  <div className="flex items-center space-x-2 text-gray-300">
                     <Clock className="w-4 h-4" />
-                    <span>{movie.runtime} dk</span>
+                    <span>{runtime} dk</span>
                   </div>
                 )}
 
-                {movie.number_of_seasons && (
-                  <span className="px-3 py-1 bg-gray-700 rounded">
-                    {movie.number_of_seasons} Sezon
-                  </span>
+                {/* Dizi ise Sezon Sayısı Göster */}
+                {isTvShow && movie.number_of_seasons && (
+                   <div className="flex items-center space-x-2 text-gray-300">
+                     <Layers className="w-4 h-4" />
+                     <span>{movie.number_of_seasons} Sezon</span>
+                   </div>
                 )}
               </div>
 
-              {/* Genres */}
-              {movie.genres && movie.genres.length > 0 && (
+              {movie.genres && (
                 <div className="flex flex-wrap gap-2">
                   {movie.genres.map((genre) => (
-                    <span
-                      key={genre.id}
-                      className="px-4 py-1 bg-netflix-gray rounded-full text-sm"
-                    >
+                    <span key={genre.id} className="px-4 py-1 bg-white/10 hover:bg-white/20 transition rounded-full text-sm backdrop-blur-sm">
                       {genre.name}
                     </span>
                   ))}
                 </div>
               )}
 
-              {/* Overview */}
-              <p className="text-lg text-gray-200 max-w-3xl">
-                {movie.overview}
-              </p>
+              <p className="text-lg text-gray-200 max-w-3xl leading-relaxed">{movie.overview}</p>
 
-              {/* Buttons */}
               <div className="flex items-center gap-4">
-                <button className="flex items-center space-x-2 bg-white text-black px-8 py-3 rounded hover:bg-gray-200 transition font-semibold">
-                  <Play className="w-5 h-5 fill-black" />
-                  <span>İzle</span>
-                </button>
-                <button className="flex items-center space-x-2 bg-gray-700/80 hover:bg-gray-700 px-8 py-3 rounded transition font-semibold">
-                  <Plus className="w-5 h-5" />
-                  <span>Listem</span>
+                <button 
+                  onClick={handleToggleList}
+                  disabled={listLoading}
+                  className={`flex items-center space-x-2 px-8 py-3 rounded transition font-semibold border
+                    ${isInList 
+                      ? 'bg-green-600/80 border-green-500 hover:bg-green-600 text-white' 
+                      : 'bg-gray-700/80 border-transparent hover:bg-gray-700 text-white'
+                    } ${listLoading ? 'opacity-70 cursor-wait' : ''}`}
+                >
+                  {isInList ? (
+                    <>
+                      <Check className="w-5 h-5" />
+                      <span>Listemde</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-5 h-5" />
+                      <span>Listem</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -174,9 +226,8 @@ const MovieDetail = () => {
         </div>
       </div>
 
-      {/* Similar Movies */}
       {similar.length > 0 && (
-        <div className="relative -mt-32 z-10 pb-16">
+        <div className="relative -mt-32 z-10 pb-16 px-4 md:px-8 lg:px-16">
           <MovieRow title="Benzer İçerikler" movies={similar} />
         </div>
       )}

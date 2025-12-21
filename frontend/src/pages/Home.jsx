@@ -6,6 +6,7 @@ import HeroSection from "../components/HeroSection";
 import MovieRow from "../components/MovieRow";
 import Loading from "../components/Loading";
 
+
 import back1Image from "../assets/images/back1.png";
 import back2Image from "../assets/images/back2.png";
 import back3Image from "../assets/images/back3.png";
@@ -324,22 +325,47 @@ const Home = () => {
     <div className="min-h-screen bg-black text-white">
       <HeroSection movie={data.hero} />
 
-      <div className="relative -mt-32 z-10 pb-20">
-        <div className="max-w-screen-2xl mx-auto px-4 md:px-8 space-y-10">
-          {data.personalized.length > 0 && (
-            <MovieRow
-              title="Sizin İçin Öneriler"
-              movies={data.personalized}
-              size="large"
-            />
-          )}
+     <div className="relative -mt-32 z-10 pb-20">
+    <div className="max-w-screen-2xl mx-auto px-4 md:px-8 space-y-10">
+        
+        {data.personalized.length > 0 && (
+        <MovieRow
+            title="Sizin İçin Öneriler"
+            movies={data.personalized}
+            size="large"
+            linkTo="/category/recommendations" // Öneriler için link
+        />
+        )}
 
-          <MovieRow title="Şu Anda Trend" movies={data.trending} size="normal" />
-          <MovieRow title="Popüler Filmler" movies={data.popular} size="normal" />
-          <MovieRow title="En İyi Puanlananlar" movies={data.topRated} size="normal" />
-          <MovieRow title="Popüler Diziler" movies={data.series} size="normal" />
-        </div>
-      </div>
+        <MovieRow 
+            title="Şu Anda Trend" 
+            movies={data.trending} 
+            size="large" 
+            linkTo="/category/trending" // Trendler sayfası için
+        />
+        
+        <MovieRow 
+            title="Popüler Filmler" 
+            movies={data.popular} 
+            size="large" 
+            linkTo="/category/popular" // Popüler sayfası için
+        />
+        
+        <MovieRow 
+            title="En İyi Puanlananlar" 
+            movies={data.topRated} 
+            size="large" 
+            linkTo="/category/top-rated" // En iyiler sayfası için
+        />
+        
+        <MovieRow 
+            title="Popüler Diziler" 
+            movies={data.series} 
+            size="large" 
+            linkTo="/category/series" // Diziler sayfası için
+        />
+    </div>
+</div>
     </div>
   );
 };
