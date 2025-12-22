@@ -19,24 +19,46 @@ export const authAPI = {
   updateProfile: (data) => api.put("/auth/profile", data),
 };
 
-// --- MOVIES ---
+// --- MOVIES & TV SERIES ---
 export const moviesAPI = {
-  getTrending: () => api.get("/movies/trending"),
-  getPopular: () => api.get("/movies/popular"),
-  getTopRated: () => api.get("/movies/top-rated"),
-  getSeries: () => api.get("/movies/series"),
-  getDetail: (id) => api.get(`/movies/${id}`),
-  search: (q) => api.get(`/movies/search?q=${encodeURIComponent(q)}`),
+  getTrending: (page = 1) => api.get(`/movies/trending?page=${page}`),
+  getPopular: (page = 1) => api.get(`/movies/popular?page=${page}`),
+  getTopRated: (page = 1) => api.get(`/movies/top-rated?page=${page}`),
+  getSeries: (page = 1) => api.get(`/movies/series?page=${page}`),
+  
+  // Film Detayı
+  getDetails: (id) => api.get(`/movies/${id}`),
+
+  // --- YENİ EKLENEN: Dizi Detayı ---
+  // Backend'de bu rotanın (/tv/:id) tanımlı olması gerekir.
+  getTvDetails: (id) => api.get(`/tv/${id}`), 
+  
+  search: (q) => api.get(`/movies/search`, { params: { q } }),
+  
+  getGenres: () => api.get("/genres"),
+
+  getByGenre: (genreId, page = 1) => api.get(`/genre/${genreId}?page=${page}`),
 };
 
 // --- RECOMMENDATIONS ---
 export const recommendationsAPI = {
   getHybrid: () => api.get("/recommendations/hybrid"),
-  getContentBased: (movieId) =>
-    api.get(`/recommendations/content/${movieId}`),
-  getGenreBased: (genres) =>
-    api.post("/recommendations/genre", { genres }),
+  getContentBased: (movieId) => api.get(`/recommendations/content/${movieId}`),
+  getGenreBased: (genres) => api.post("/recommendations/genre", { genres }),
   getPopular: () => api.get("/recommendations/popular"),
+  
+  // Film Benzerleri
+  getSimilar: (id) => api.get(`/movies/${id}/similar`),
+
+  // --- YENİ EKLENEN: Dizi Benzerleri ---
+  // Backend'de bu rotanın (/tv/:id/similar veya recommendations) tanımlı olması gerekir.
+  getTvSimilar: (id) => api.get(`/tv/${id}/similar`),
+};
+
+// --- USERS / WATCHLIST ---
+export const userAPI = {
+  toggleWatchlist: (data) => api.post("/users/watchlist/toggle", data),
+  getProfile: () => api.get("/users/profile"), 
 };
 
 // --- AI (Gemini) ---
@@ -49,5 +71,3 @@ export const aiAPI = {
 };
 
 export default api;
-
- 

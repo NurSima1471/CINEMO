@@ -2,6 +2,7 @@ const tmdbAxios = require("../config/tmdb");
 const Movie = require("../models/Movie");
 
 class TMDBService {
+  // Gelen verileri veritabanına kaydetme ve formatlama yardımcısı
   async saveMoviesToDB(results = []) {
     if (!Array.isArray(results)) return [];
 
@@ -20,7 +21,7 @@ class TMDBService {
       popularity: m.popularity || 0,
     }));
 
-    // upsert
+    // Veritabanına "Upsert" işlemi (Varsa güncelle, yoksa ekle)
     for (const item of mapped) {
       await Movie.updateOne(
         { tmdbId: item.tmdbId },
@@ -32,25 +33,41 @@ class TMDBService {
     return mapped;
   }
 
-  async getTrending() {
-    const res = await tmdbAxios.get("/trending/movie/week");
+  // --- SAYFALAMA DESTEĞİ EKLENMİŞ METODLAR ---
+
+  // Trendler (Sayfa numarası eklendi)
+  async getTrending(page = 1) {
+    const res = await tmdbAxios.get("/trending/movie/week", {
+      params: { page } // Axios otomatik olarak ?page=X ekler
+    });
     return this.saveMoviesToDB(res.data.results);
   }
 
-  async getPopular() {
-    const res = await tmdbAxios.get("/movie/popular");
+  // Popüler Filmler (Sayfa numarası eklendi)
+  async getPopular(page = 1) {
+    const res = await tmdbAxios.get("/movie/popular", {
+      params: { page }
+    });
     return this.saveMoviesToDB(res.data.results);
   }
 
-  async getTopRated() {
-    const res = await tmdbAxios.get("/movie/top_rated");
+  // En Yüksek Puanlılar (Sayfa numarası eklendi)
+  async getTopRated(page = 1) {
+    const res = await tmdbAxios.get("/movie/top_rated", {
+      params: { page }
+    });
     return this.saveMoviesToDB(res.data.results);
   }
 
-  async getSeries() {
-    const res = await tmdbAxios.get("/tv/popular");
+  // Popüler Diziler (Sayfa numarası eklendi)
+  async getSeries(page = 1) {
+    const res = await tmdbAxios.get("/tv/popular", {
+      params: { page }
+    });
     return this.saveMoviesToDB(res.data.results);
   }
+
+  // --- DİĞER METODLAR ---
 
   async getMovieDetails(id) {
     const res = await tmdbAxios.get(`/movie/${id}`);
@@ -91,6 +108,7 @@ class TMDBService {
 
     // Daha doğru tür isimleri için ilk birkaç sonuca detay isteği at ve döndür
     const detailed = [];
+    // Sadece ilk 5 sonucu detaylı çekiyoruz performans için
     for (const r of results.slice(0, 5)) {
       try {
         const det = await this.getMovieDetails(r.id);
@@ -102,6 +120,19 @@ class TMDBService {
     }
 
     return detailed.length > 0 ? detailed : this.saveMoviesToDB(results);
+  }
+
+  // Benzer Filmler
+  async getSimilarMovies(id) {
+    try {
+      const res = await tmdbAxios.get(`/movie/${id}/similar`);
+      // Gelen verileri veritabanı formatına uygun hale getirip döndürüyoruz
+      return this.saveMoviesToDB(res.data.results);
+    } catch (error) {
+      console.warn(`Similar movies error for ID ${id}:`, error.message);
+      // Hata olursa boş dizi dön ki frontend patlamasın
+      return [];
+    }
   }
 }
 

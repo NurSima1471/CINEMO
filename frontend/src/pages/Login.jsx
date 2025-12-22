@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import FormInput from "../components/FormInput"; 
+// YENİ EKLENEN: Loading bileşenini çağırıyoruz
+import Loading from "../components/Loading"; 
 
 // Resimler
 import back1Image from '../assets/images/back1.png';
@@ -25,7 +27,7 @@ export default function Login() {
   const row3Url = `url('${back3Image}')`;
   const row4Url = `url('${back4Image}')`;
 
-  // İkonlar (SVG'leri burada tanımlayarak JSX'i temiz tutuyoruz)
+  // İkonlar
   const UserIcon = (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -47,7 +49,7 @@ export default function Login() {
   const submit = async (e) => {
     e.preventDefault();
     setErr("");
-    setLoading(true);
+    setLoading(true); // Yükleme başlıyor, ekran kararacak ve çark dönecek
 
     try {
       const res = isRegister
@@ -59,14 +61,17 @@ export default function Login() {
     } catch (error) {
       setErr("Beklenmedik bir hata oluştu.");
     } finally {
-      setLoading(false);
+      setLoading(false); // İşlem bitince yükleme ekranı kalkacak
     }
   };
 
   return (
     <div className="relative w-full h-screen font-sans overflow-hidden bg-[#0a0310]">
       
-      {/* 1. ARKA PLAN (Animasyonlar index.css dosyasından geliyor) */}
+      {/* YENİ EKLENEN: Eğer loading true ise Loading bileşenini göster */}
+      {loading && <Loading />}
+
+      {/* 1. ARKA PLAN */}
       <div className="absolute inset-0">
         <div className="absolute top-0 left-0 w-[200%] h-[25%] flex animate-scroll-left opacity-60">
           <div className="movie-bg-image" style={{ backgroundImage: row1Url }}></div>
@@ -86,8 +91,8 @@ export default function Login() {
         </div>
       </div>
 
-      {/* --- KARANLIK FİLTRE  --- */}
-      <div className="absolute inset-0 z-10 bg-black/50 pointer-events-none"></div>
+      {/* --- KARANLIK FİLTRE --- */}
+      <div className="absolute inset-0 z-10 bg-black/70 pointer-events-none"></div>
 
       {/* 2. FORM KUTUSU */}
       <div className="relative z-30 flex items-center justify-center h-full px-4">
@@ -107,7 +112,6 @@ export default function Login() {
 
           <form onSubmit={submit} className="flex flex-col gap-5 relative z-10">
             
-            {/* Ad Soyad Input  */}
             {isRegister && (
               <FormInput
                 id="name"
@@ -119,7 +123,6 @@ export default function Login() {
               />
             )}
 
-            {/* Email Input */}
             <FormInput
               id="email"
               type="email"
@@ -129,7 +132,6 @@ export default function Login() {
               icon={MailIcon}
             />
 
-            {/* Şifre Input */}
             <FormInput
               id="password"
               type={showPass ? "text" : "password"}
@@ -142,7 +144,6 @@ export default function Login() {
               onTogglePass={() => setShowPass(!showPass)}
             />
 
-            {/* Submit Butonu */}
             <button
               type="submit"
               disabled={loading}
@@ -151,11 +152,11 @@ export default function Login() {
                 hover:shadow-[0_6px_20px_rgba(219,39,119,0.3)] drop-shadow-md hover:scale-[1.01] active:scale-[0.98] transition-all duration-300
                  disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
             >
-              {loading ? "Loading.." : (isRegister ? "Sign Up" : "Log In")}
+              {/* Button textini de değiştirebiliriz ama Loading ekrana geleceği için çok önemli değil */}
+              {loading ? "Processing..." : (isRegister ? "Sign Up" : "Log In")}
             </button>
           </form>
 
-          {/* Giriş/Kayıt Arası Geçiş */}
           <div className="mt-8 pt-6 border-t border-pink-500/20 text-center text-gray-400">
             {isRegister ? "Already have an account? " : "Don't have an account? "}
             <button

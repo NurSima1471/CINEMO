@@ -21,7 +21,13 @@ html, body, #root {
   from { transform: translateX(-50%); }
   to { transform: translateX(0); }
 }
-
+ @keyframes blink {
+          0%, 100% { opacity: 0; }
+          50% { opacity: 1; }
+        }
+        .animate-blink {
+          animation: blink 1.4s infinite both;
+        }
 /* 2. Özel Sınıflar */
 /* @layer utilities içine alıyoruz ki Tailwind yapısıyla uyumlu olsun */
 @layer utilities {
