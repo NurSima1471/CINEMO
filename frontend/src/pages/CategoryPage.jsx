@@ -19,7 +19,7 @@ const sortOptions = [
 ];
 
 const CategoryPage = () => {
-  const { type } = useParams();
+  const { type, genreId } = useParams();
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
@@ -50,7 +50,7 @@ const CategoryPage = () => {
   useEffect(() => {
     fetchCategoryData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [type]);
+  }, [type, genreId]);
 
   const fetchCategoryData = async () => {
     setLoading(true);
@@ -59,6 +59,31 @@ const CategoryPage = () => {
     let apiFunction = null;
     let pageTitle = "";
 
+    // Genre sayfası kontrolü
+    if (genreId) {
+      try {
+        // Genre bilgisini al
+        const genresRes = await moviesAPI.getGenres();
+        const genres = genresRes.data.success ? genresRes.data.data : [];
+        const genre = genres.find(g => g.id === parseInt(genreId));
+        
+        pageTitle = genre ? `${genre.name} Filmleri & Dizileri` : "Tür Filmleri";
+        
+        // Genre'ye göre içerik çek
+        const response = await moviesAPI.searchByGenre(genreId, "all");
+        const genreMovies = response.data.success ? response.data.data : [];
+        setMovies(genreMovies);
+        setTitle(pageTitle);
+        setLoading(false);
+        return;
+      } catch (error) {
+        console.error("Genre data fetch error:", error);
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Normal kategori sayfası
     switch (type) {
       case "trending":
         pageTitle = "Şu Anda Trend Olanlar";
@@ -73,8 +98,13 @@ const CategoryPage = () => {
         apiFunction = moviesAPI.getTopRated;
         break;
       case "series":
+      case "tv":
         pageTitle = "Popüler Diziler";
         apiFunction = moviesAPI.getSeries;
+        break;
+      case "movie":
+        pageTitle = "Popüler Filmler";
+        apiFunction = moviesAPI.getPopular;
         break;
       case "recommendations":
         pageTitle = "Sizin İçin Öneriler";

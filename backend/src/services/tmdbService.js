@@ -98,30 +98,128 @@ class TMDBService {
   }
 
   async search(query) {
-    const res = await tmdbAxios.get("/search/movie", {
-      params: { query },
-    });
-    const results = res.data.results || [];
+    // Hem film hem dizi araması yap
+    const [movieRes, tvRes] = await Promise.all([
+      tmdbAxios.get("/search/movie", { params: { query } }),
+      tmdbAxios.get("/search/tv", { params: { query } })
+    ]);
 
-    // İlk olarak temel bilgileri kaydet
-    await this.saveMoviesToDB(results);
+    const movieResults = movieRes.data.results || [];
+    const tvResults = tvRes.data.results || [];
 
-    // Daha doğru tür isimleri için ilk birkaç sonuca detay isteği at ve döndür
-    const detailed = [];
-    // Sadece ilk 5 sonucu detaylı çekiyoruz performans için
-    for (const r of results.slice(0, 5)) {
-      try {
-        const det = await this.getMovieDetails(r.id);
-        detailed.push(det);
-      } catch (e) {
-        // hata olursa atla
-        console.warn("Failed to fetch movie details for", r.id, e.message || e);
-      }
-    }
+    // Film sonuçlarına media_type ekle
+    const moviesWithType = movieResults.map(m => ({ ...m, media_type: 'movie' }));
+    // Dizi sonuçlarına media_type ekle
+    const tvWithType = tvResults.map(t => ({ ...t, media_type: 'tv' }));
 
-    return detailed.length > 0 ? detailed : this.saveMoviesToDB(results);
+    // Tüm sonuçları birleştir
+    const allResults = [...moviesWithType, ...tvWithType];
+
+    // Popülariteye göre sırala
+    allResults.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+
+    // İlk 20 sonucu al
+    const topResults = allResults.slice(0, 20);
+
+    // Veritabanına kaydet
+    await this.saveMoviesToDB(topResults);
+
+    return topResults.map(item => ({
+      tmdbId: item.id,
+      title: item.title || item.name || "Untitled",
+      overview: item.overview || "",
+      posterPath: item.poster_path || "",
+      backdropPath: item.backdrop_path || "",
+      genres: (item.genre_ids || []).map((id) => ({ id, name: String(id) })),
+      releaseDate: item.release_date || item.first_air_date || "",
+      mediaType: item.media_type || "movie",
+      voteAverage: item.vote_average || 0,
+      voteCount: item.vote_count || 0,
+      popularity: item.popularity || 0,
+    }));
   }
 
+  async getGenres() {
+    try {
+      const [movieGenres, tvGenres] = await Promise.all([
+        tmdbAxios.get("/genre/movie/list", { params: { language: 'tr' } }),
+        tmdbAxios.get("/genre/tv/list", { params: { language: 'tr' } })
+      ]);
+
+      // Film ve dizi türlerini birleştir ve tekrarları kaldır
+      const allGenres = [
+        ...movieGenres.data.genres,
+        ...tvGenres.data.genres
+      ];
+
+      // Tekrarları kaldır (id'ye göre)
+      const uniqueGenres = allGenres.reduce((acc, genre) => {
+        if (!acc.find(g => g.id === genre.id)) {
+          acc.push(genre);
+        }
+        return acc;
+      }, []);
+
+      return uniqueGenres;
+    } catch (error) {
+      console.error("Genre fetch error:", error);
+      return [];
+    }
+  }
+
+  async searchByGenre(genreId, mediaType = "all") {
+    try {
+      let results = [];
+
+      if (mediaType === "all" || mediaType === "movie") {
+        const movieRes = await tmdbAxios.get("/discover/movie", {
+          params: { 
+            with_genres: genreId,
+            language: 'tr',
+            sort_by: 'popularity.desc'
+          }
+        });
+        const moviesWithType = movieRes.data.results.map(m => ({ ...m, media_type: 'movie' }));
+        results = [...results, ...moviesWithType];
+      }
+
+      if (mediaType === "all" || mediaType === "tv") {
+        const tvRes = await tmdbAxios.get("/discover/tv", {
+          params: { 
+            with_genres: genreId,
+            language: 'tr',
+            sort_by: 'popularity.desc'
+          }
+        });
+        const tvWithType = tvRes.data.results.map(t => ({ ...t, media_type: 'tv' }));
+        results = [...results, ...tvWithType];
+      }
+
+      // Popülariteye göre sırala ve ilk 20'yi al
+      results.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+      const topResults = results.slice(0, 20);
+
+      // Veritabanına kaydet
+      await this.saveMoviesToDB(topResults);
+
+      return topResults.map(item => ({
+        tmdbId: item.id,
+        title: item.title || item.name || "Untitled",
+        overview: item.overview || "",
+        posterPath: item.poster_path || "",
+        backdropPath: item.backdrop_path || "",
+        genres: (item.genre_ids || []).map((id) => ({ id, name: String(id) })),
+        releaseDate: item.release_date || item.first_air_date || "",
+        mediaType: item.media_type || "movie",
+        voteAverage: item.vote_average || 0,
+        voteCount: item.vote_count || 0,
+        popularity: item.popularity || 0,
+      }));
+    } catch (error) {
+      console.error("Genre search error:", error);
+      return [];
+    }
+  }
   // Benzer Filmler
   async getSimilarMovies(id) {
     try {

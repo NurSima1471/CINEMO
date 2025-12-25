@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { useEffect } from "react";
 import Header from "./components/Header";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -13,6 +14,11 @@ import SearchPage from "./pages/SearchPage";
 
 const AppRoutes = () => {
   const { isAuthenticated, loading } = useAuth();
+
+  // Sayfa title'ını güncelle
+  useEffect(() => {
+    document.title = "CINEMO - Film & Dizi Platformu";
+  }, []);
 
   if (loading) {
     return <Loading />;
@@ -34,6 +40,9 @@ const AppRoutes = () => {
 
         {/* Category Page */}
         <Route path="/category/:type" element={<CategoryPage />} />
+
+        {/* Genre Page */}
+        <Route path="/genre/:genreId" element={<CategoryPage />} />
 
         {/* Public Movie Detail */}
         <Route path="/movie/:id" element={<MovieDetail />} />

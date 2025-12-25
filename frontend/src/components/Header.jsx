@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"; 
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { moviesAPI } from "../services/api";
 import { Search } from "lucide-react";
 
 export default function Header() {
@@ -10,11 +11,28 @@ export default function Header() {
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchType, setSearchType] = useState("all"); // "all", "movie", "tv", "genre:ID"
+  const [genres, setGenres] = useState([]);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 0);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Genres'leri yükle
+  useEffect(() => {
+    const fetchGenres = async () => {
+      try {
+        const res = await moviesAPI.getGenres();
+        if (res.data.success) {
+          setGenres(res.data.data || []);
+        }
+      } catch (error) {
+        console.error("Genres fetch error:", error);
+      }
+    };
+    fetchGenres();
   }, []);
 
   const handleSearch = (e) => {
@@ -23,10 +41,42 @@ export default function Header() {
     const q = searchTerm.trim();
     if (!q) return;
 
-    nav({
-      pathname: "/search",
-      search: `?q=${encodeURIComponent(q)}`
-    });
+    // Tür filtresi ile birlikte arama yap
+    const searchParams = new URLSearchParams();
+    searchParams.set('q', q);
+    
+    if (searchType.startsWith('genre:')) {
+      // Genre araması
+      const genreId = searchType.split(':')[1];
+      nav(`/genre/${genreId}?q=${encodeURIComponent(q)}`);
+    } else if (searchType !== 'all') {
+      // Normal tür filtresi
+      searchParams.set('type', searchType);
+      nav({
+        pathname: "/search",
+        search: `?${searchParams.toString()}`
+      });
+    } else {
+      // Tüm sonuçlar
+      nav({
+        pathname: "/search",
+        search: `?${searchParams.toString()}`
+      });
+    }
+  };
+
+  const getSearchTypeLabel = () => {
+    if (searchType.startsWith('genre:')) {
+      const genreId = parseInt(searchType.split(':')[1]);
+      const genre = genres.find(g => g.id === genreId);
+      return genre ? genre.name : "Tür";
+    }
+    
+    switch(searchType) {
+      case "movie": return "Filmler";
+      case "tv": return "Diziler";
+      default: return "Tümü";
+    }
   };
 
   const isLoginPage = location.pathname === "/login";
@@ -61,22 +111,61 @@ export default function Header() {
           {/* MENÜ + ARAMA */}
           {user && isHomePage && (
             <div className="hidden md:flex items-center gap-6 ml-10">
-              <nav className="flex items-center gap-5 text-sm font-medium text-gray-300">
-               
-                <Link to="/tv" className="hover:text-white hover:scale-105 transition-all">Diziler</Link>
-                <Link to="/movies" className="hover:text-white hover:scale-105 transition-all">Filmler</Link>
-              </nav>
+              {/* ARAMA FORMU */}
+              <div className="flex flex-col gap-2">
+                {/* Arama Kutusu */}
+                <form onSubmit={handleSearch} className="relative group flex items-center bg-zinc-800/60 border border-white/10 rounded-full overflow-hidden focus-within:border-purple-500/50 transition-all">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-purple-400 transition-colors z-10" />
+                  <input 
+                    type="text" 
+                    placeholder="Film, dizi, tür ara..." 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="bg-transparent py-2 pl-9 pr-4 text-sm text-white placeholder-gray-500 focus:outline-none transition-all w-80 border-none"
+                  />
+                </form>
 
-              <form onSubmit={handleSearch} className="relative group">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-purple-400 transition-colors" />
-                <input 
-                  type="text" 
-                  placeholder="Ara..." 
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="bg-zinc-800/60 border border-white/10 rounded-full py-1.5 pl-9 pr-4 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus:bg-zinc-800 transition-all w-40 focus:w-64"
-                />
-              </form>
+                {/* Hızlı Tür Butonları */}
+                <div className="flex flex-wrap gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setSearchType("all")}
+                    className={`px-3 py-1 rounded-full text-xs transition-all ${
+                      searchType === "all" 
+                        ? "bg-purple-600 text-white shadow-lg" 
+                        : "bg-zinc-700/50 text-gray-300 hover:bg-zinc-600/50 hover:text-white"
+                    }`}
+                  >
+                    Tümü
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => nav("/category/movie")}
+                    className="px-3 py-1 rounded-full text-xs transition-all bg-zinc-700/50 text-gray-300 hover:bg-zinc-600/50 hover:text-white"
+                  >
+                    Filmler
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => nav("/category/tv")}
+                    className="px-3 py-1 rounded-full text-xs transition-all bg-zinc-700/50 text-gray-300 hover:bg-zinc-600/50 hover:text-white"
+                  >
+                    Diziler
+                  </button>
+                  
+                  {/* Popüler Türler */}
+                  {genres.slice(0, 5).map((genre) => (
+                    <button
+                      key={genre.id}
+                      type="button"
+                      onClick={() => nav(`/genre/${genre.id}`)}
+                      className="px-3 py-1 rounded-full text-xs transition-all bg-zinc-700/50 text-gray-300 hover:bg-zinc-600/50 hover:text-white"
+                    >
+                      {genre.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </div>

@@ -35,7 +35,8 @@ export const moviesAPI = {
   
   search: (q) => api.get(`/movies/search`, { params: { q } }),
   
-  getGenres: () => api.get("/genres"),
+  getGenres: () => api.get("/movies/genres"),
+  searchByGenre: (genreId, mediaType = "all") => api.get(`/movies/genre/${genreId}`, { params: { mediaType } }),
 
   getByGenre: (genreId, page = 1) => api.get(`/genre/${genreId}?page=${page}`),
   

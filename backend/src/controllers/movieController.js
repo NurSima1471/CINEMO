@@ -73,3 +73,23 @@ exports.getSimilarMovies = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+exports.getGenres = async (req, res) => {
+  try {
+    const genres = await tmdbService.getGenres();
+    res.json({ success: true, data: genres });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.searchByGenre = async (req, res) => {
+  try {
+    const { genreId } = req.params;
+    const { mediaType } = req.query; // "all", "movie", "tv"
+    const results = await tmdbService.searchByGenre(genreId, mediaType || "all");
+    res.json({ success: true, data: results });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
